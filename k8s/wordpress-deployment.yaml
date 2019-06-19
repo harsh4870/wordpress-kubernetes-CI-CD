@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-site
+  labels:
+    app: wordpress-site
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+  selector:
+    app: wordpress-site
+    tier: frontend
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: wordpress-site
+  labels:
+    app: wordpress-site
+spec:
+  selector:
+    matchLabels:
+      app: wordpress-site
+      tier: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress-site
+        tier: frontend
+    spec:
+      containers:
+      - image: WORDPRESS_IMAGE_NAME
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: .10
+          limits:
+            memory: "512Mi"
+            cpu: .15
+        name: wordpress-site
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        volumeMounts:
+        - name: wordpress-data-pvc
+          mountPath: /var/www/html
+        imagePullPolicy: Always
+      volumes:
+      - name: wordpress-data-pvc
+        persistentVolumeClaim:
+          claimName: wordpress-data-pvc

@@ -1,0 +1,21 @@
+substitutions:
+    _CLOUDSDK_COMPUTE_ZONE: <Region>  # default value
+    _CLOUDSDK_CONTAINER_CLUSTER: <Cluster value>      # default value
+steps:
+- id: 'build wordpress image'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/$REPO_NAME/$BRANCH_NAME:$SHORT_SHA', '.']
+- id: 'push wordpress image to registry'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/$REPO_NAME/$BRANCH_NAME:$SHORT_SHA']
+- id: 'set wordpress image in yamls'
+  name: 'ubuntu'
+  args: ['bash','-c','sed -i "s,WORDPRESS_IMAGE_NAME,gcr.io/$PROJECT_ID/$REPO_NAME/$BRANCH_NAME:$SHORT_SHA," k8s/*.yaml']
+- id: kubectl-apply
+  name: 'gcr.io/cloud-builders/kubectl'
+  args: ['apply', '-f', 'k8s/']
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUDSDK_COMPUTE_ZONE}'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUDSDK_CONTAINER_CLUSTER}'
+images: ['gcr.io/$PROJECT_ID/$REPO_NAME/$BRANCH_NAME:$SHORT_SHA']
+
